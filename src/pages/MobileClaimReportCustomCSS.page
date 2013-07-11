@@ -1,0 +1,14 @@
+<apex:page showHeader="true" sidebar="true" contentType="text/css">
+.ui-page {
+	background: #00405c;
+}
+
+.ui-mobile .ui-header {
+	background: #005b81;
+
+}
+
+.ui-bar-b {
+	text-shadow: 0px 0px 0px #F00;
+}
+</apex:page>
