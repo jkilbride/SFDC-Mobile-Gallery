@@ -8,20 +8,100 @@
 		<apex:includeScript value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'jquery.mobile-1.3.0.min.js')}"/>
 		<apex:includeScript value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'ForceTk.js')}"/>
 		<apex:stylesheet value="{!$Page.MobileClaimReportCustomCSS}" />
+        <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=true" />
+		<script src="{!URLFOR($Resource.CanvasResize, 'jquery.exif.js')}"></script>
+    	<script src="{!URLFOR($Resource.CanvasResize, 'jquery.canvasResize.js')}"></script>
+    	<script src="{!URLFOR($Resource.CanvasResize, 'canvasResize.js')}"></script>
+    
 		<script>
-			 $j = jQuery.noConflict();
+			$j = jQuery.noConflict();
 
 			var restAPIClient = new forcetk.Client();
 			var contactId = null;
 			var claim = {};
+	        var claimId = null;
+        
+	        var myLocation = new google.maps.LatLng(0, 0);
 
 
 		    restAPIClient.setSessionToken('{!$Api.Session_ID}');
             
 			$j(document).ready(function(){
-
+				$j('#fileInput').change(function(){
+                	console.log('Photo Has Been Updated');
+                    var file = event.target.files[0];
+                
+                    console.log(file);
+                    console.log('Image Changed');
+                    
+                    $j('#uploaded_photos').prepend('<div class="imgTile"><img src="" /></div>');
+                    
+                    $j.canvasResize(file, {
+                        width: 245,
+                        height: 0,
+                        crop: false,
+                        quality: 100,
+                        //rotate: 90,
+                        callback: function(data, width, height) {
+                            console.log('Resize Callback');
+                            $j('.imgTile:first-child img').attr('src', data);
+                            console.log(data);
+                            data = data.split(',')[1];
+                            var attachment = {
+                            	Body : data,
+								ParentId : claimId,
+                                Name : 'Photo.png'
+                            };
+                            
+                            restAPIClient.create('Attachment', attachment, function(r){
+                                console.log('Attachment Id ' + r.id);
+                                
+                            }, function(e){
+                                console.log('** ERROR **' + error[0].message);
+                            });
+                                
+                            
+                            console.log('Dimensions ' + width +' x '+ height);
+                        }
+                    });
+                });
 
 			});
+        
+	        function showLocation() {
+                $j.mobile.showPageLoadingMsg();
+                var mapOptions = {
+                    zoom: 16,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                };
+                map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions);
+                
+                // Try HTML5 geolocation
+                if(navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        var pos = new google.maps.LatLng(position.coords.latitude,
+                                                         position.coords.longitude);
+                        myLocation = pos;
+                        var infowindow = new google.maps.InfoWindow({
+                            map: map,
+                            position: pos,
+                            content: 'Location found using HTML5.'
+                        });
+                        
+                        map.setCenter(pos);
+						google.maps.event.trigger(map, "resize");
+                        map.setCenter(pos);
+                        
+					}, function() {
+                        console.log('Error: GeoLocation ');
+                    });
+                } else {
+                    // Browser doesn't support Geolocation
+                    console.log('Error: GeoLocation ');
+                }
+                $j.mobile.changePage('#accidentLocation', {changeHash: true});
+                
+            }
 
 			function checkForCreateContact() {
 				$j.mobile.showPageLoadingMsg();
@@ -79,6 +159,54 @@
 				}); 
 				
 			}
+        
+        	function updateClaimDetails() {
+            	console.log('Claim Updated'); 
+                $j.mobile.showPageLoadingMsg();
+                
+                claim = {
+                	Contact__c : contactId,
+                    Description__c : $j('#accident_details').val(),
+                    Location__Latitude__s : myLocation.lat(),
+                    Location__Longitude__s : myLocation.lng(), 
+                    Make__c : $j('#car_make').val(),
+                    Model__c : $j('#car_model').val(),
+                    Registration__c : $j('#car_reg').val(),
+                    Other_Parties__c : $j('#accident_other_paries').val(),
+                    Witnesses__c : $j('#accident_witnesses').val()
+                };
+                
+                
+                if(claimId == null) {
+                    restAPIClient.create('Claim__c', claim, function(r){
+                        console.log(r);
+                        claimId = r.id;
+                        console.log('Claim Created width Id ' + contactId);
+                        $j.mobile.changePage('#menu', {changeHash: true});
+                    }, function(e){
+                        console.log('** ERROR **' + error[0].message);
+                    });
+				} else {
+                    restAPIClient.update('Claim__c', claimId, claim, function(r){
+                        console.log(r);
+                        console.log('Claim Updated ' + claimId);
+                        $j.mobile.changePage('#menu', {changeHash: true});
+                    }, function(e){
+                        console.log('** ERROR **' + error[0].message);
+                    });
+				}
+                 
+			}
+        
+	        function goToPhotos() {
+                if(claimId == null) {
+                	confirm('You must fill in the claim details before adding supporting photos');    
+                } else {
+                    $j.mobile.showPageLoadingMsg();
+                	$j.mobile.changePage('#photos', {changeHash: true});
+                }
+                
+            }
 
 			
 
@@ -99,15 +227,98 @@
 					<li data-icon="edit"><a href="#contactDetails" >Personal Details</a></li>
 					<li data-role="list-divider">Claim &amp; Accident Details</li>					
 					<li data-icon="edit"><a href="#accidentDetails">Claim Information</a></li>
-					<li data-icon="edit"><a href="#">Accident Location</a></li>
-					<li data-icon="edit"><a href="#">Other Parties</a></li>
-					<li data-icon="edit"><a href="#">Witnesses</a></li>
+					<li data-icon="edit"><a href="javascript:showLocation()">Accident Location</a></li>
+					<li data-icon="edit"><a href="#otherParties">Other Parties</a></li>
+					<li data-icon="edit"><a href="#witnesses">Witnesses</a></li>
 					<li data-role="list-divider">Photos</li>					
-					<li data-icon="edit"><a href="#">Add Photo(s)</a></li>
+					<li data-icon="edit"><a href="javascript:goToPhotos()">Add Photo(s)</a></li>
 				</ul>
 			</div>
 		</div>
-		<div id="accidentDetails">
+        <div id="photos" data-role="page">
+            <div data-role="header"  data-theme="b">
+				<a href="#menu" data-icon="back">Back</a>
+				<h1>Photos</h1>
+				<a href="javascript:addPhoto()" data-icon="plus">Save</a>
+			</div>
+            <div data-role="content">		
+				<div class="logoBanner">
+					<img src="{!$Resource.ClaimsHeaderLogo}" />
+				</div>
+                <ul data-role="listview" data-inset="true">
+					<li data-role="list-divider">Add Photo</li>					
+                    <li>
+                        <input type="file" id="fileInput" />    
+                    </li>
+                    <li data-role="list-divider">Uploaded Photo(s)</li>					
+                    <li data-role="fieldcontain">
+                        <div id="uploaded_photos"><div style="clear:both" /></div>
+                    </li>    
+                </ul>
+            </div>
+        </div>
+        
+        <div id="accidentLocation" data-role="page">
+            <div data-role="header"  data-theme="b">
+				<a href="#menu" data-icon="back">Back</a>
+				<h1>Accident Location</h1>
+				<a href="javascript:updateClaimDetails()" data-icon="plus">Save</a>
+			</div>
+            <div data-role="content">		
+				<div class="logoBanner">
+					<img src="{!$Resource.ClaimsHeaderLogo}" />
+				</div>
+                <ul data-role="listview" data-inset="true">
+					<li data-role="list-divider">Accident Location</li>					
+                    <li><div id="map_canvas"></div></li>
+                </ul>
+            </div>
+        </div>
+        <div id="otherParties" data-role="page">
+			<div data-role="header"  data-theme="b">
+				<a href="#menu" data-icon="back">Back</a>
+				<h1>Other Parties</h1>
+				<a href="javascript:updateClaimDetails()" data-icon="plus">Save</a>
+			</div>
+			
+			<div data-role="content">		
+				<div class="logoBanner">
+					<img src="{!$Resource.ClaimsHeaderLogo}" />
+				</div>
+				<form>
+					<ul data-role="listview" data-inset="true">
+						<li data-role="list-divider">Other Parties</li>
+                        <li data-role="fieldcontain">
+				            <label for="accident_other_paries">Details:</label>
+				            <textarea name="accident_other_paries" id="accident_other_paries" value=""></textarea>
+				        </li>	
+                    </ul>
+                </form>
+            </div>
+		</div>
+        <div id="witnesses" data-role="page">
+			<div data-role="header"  data-theme="b">
+				<a href="#menu" data-icon="back">Back</a>
+				<h1>Witnesses</h1>
+				<a href="javascript:updateClaimDetails()" data-icon="plus">Save</a>
+			</div>
+			
+			<div data-role="content">		
+				<div class="logoBanner">
+					<img src="{!$Resource.ClaimsHeaderLogo}" />
+				</div>
+				<form>
+					<ul data-role="listview" data-inset="true">
+						<li data-role="list-divider">Witnesses</li>
+                        <li data-role="fieldcontain">
+				            <label for="accident_witnesses">Details:</label>
+				            <textarea name="accident_witnesses" id="accident_witnesses" value=""></textarea>
+				        </li>	
+                    </ul>
+                </form>
+            </div>
+		</div>
+		<div id="accidentDetails" data-role="page">
 			<div data-role="header"  data-theme="b">
 				<a href="#menu" data-icon="back">Back</a>
 				<h1>Claim Information</h1>
@@ -129,19 +340,20 @@
 				            <label for="car_model">Model:</label>
 				            <input type="text" name="car_model" id="car_model" value="" data-clear-btn="true" />
 				        </li>
+                        
 				        <li data-role="fieldcontain">
 				            <label for="car_reg">Registration:</label>
 				            <input type="text" name="car_reg" id="car_reg" value="" data-clear-btn="true" />
 				        </li>
 				        <li data-role="fieldcontain">
 				            <label for="accident_details">Description:</label>
-				            <textarea name="accident_details" id="accident_details" value="" data-clear-btn="true"></textarea>
+				            <textarea name="accident_details" id="accident_details" value=""></textarea>
 				        </li>				        
 					</ul>
 				</form>	
 			</div>
 		</div>
-		<div id="contactDetails">
+		<div id="contactDetails" data-role="page">
 			<div data-role="header"  data-theme="b">
 				<a href="#menu" data-icon="back">Back</a>
 				<h1>Personal Details</h1>
