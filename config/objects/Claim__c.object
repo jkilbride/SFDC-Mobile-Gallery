@@ -37,6 +37,85 @@
     <enableFeeds>false</enableFeeds>
     <enableHistory>true</enableHistory>
     <enableReports>true</enableReports>
+    <fields>
+        <fullName>Contact__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <externalId>false</externalId>
+        <label>Contact</label>
+        <referenceTo>Contact</referenceTo>
+        <relationshipLabel>Claims</relationshipLabel>
+        <relationshipName>Claims</relationshipName>
+        <required>false</required>
+        <trackHistory>false</trackHistory>
+        <type>Lookup</type>
+    </fields>
+    <fields>
+        <fullName>Description__c</fullName>
+        <externalId>false</externalId>
+        <label>Description</label>
+        <length>32768</length>
+        <trackHistory>false</trackHistory>
+        <type>LongTextArea</type>
+        <visibleLines>3</visibleLines>
+    </fields>
+    <fields>
+        <fullName>Location__c</fullName>
+        <displayLocationInDecimal>true</displayLocationInDecimal>
+        <externalId>false</externalId>
+        <label>Location</label>
+        <required>false</required>
+        <scale>6</scale>
+        <trackHistory>false</trackHistory>
+        <type>Location</type>
+    </fields>
+    <fields>
+        <fullName>Make__c</fullName>
+        <externalId>false</externalId>
+        <label>Make</label>
+        <length>50</length>
+        <required>false</required>
+        <trackHistory>false</trackHistory>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Model__c</fullName>
+        <externalId>false</externalId>
+        <label>Model</label>
+        <length>50</length>
+        <required>false</required>
+        <trackHistory>false</trackHistory>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Other_Parties__c</fullName>
+        <externalId>false</externalId>
+        <label>Other Parties</label>
+        <length>32768</length>
+        <trackHistory>false</trackHistory>
+        <type>LongTextArea</type>
+        <visibleLines>3</visibleLines>
+    </fields>
+    <fields>
+        <fullName>Registration__c</fullName>
+        <externalId>false</externalId>
+        <label>Registration</label>
+        <length>50</length>
+        <required>false</required>
+        <trackHistory>false</trackHistory>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Witnesses__c</fullName>
+        <externalId>false</externalId>
+        <label>Witnesses</label>
+        <length>32768</length>
+        <trackHistory>false</trackHistory>
+        <type>LongTextArea</type>
+        <visibleLines>3</visibleLines>
+    </fields>
     <label>Claim</label>
     <listViews>
         <fullName>All</fullName>
